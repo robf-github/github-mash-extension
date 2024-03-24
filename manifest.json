@@ -9,7 +9,7 @@
           "github-mash.js"
         ],
         "matches": [
-          "https://github.com/*/pull/*"
+          "https://github.com/*"
         ]
       }
     ]
