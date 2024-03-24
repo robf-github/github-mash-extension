@@ -11,11 +11,13 @@
 (function () {
     'use strict';
 
-    console.log('GitMash loaded')
+    console.log('GitMash loaded');
 
     // Handle the SPA nature of github, listen for navigation changes and act on those.
-    window.navigation.addEventListener("navigate", (_) => {
-        gitMash();
+    window.navigation.addEventListener("navigate", (event) => {
+        if (event.navigationType === 'replace') {
+            gitMash();
+        }
     });
 })();
 
@@ -25,7 +27,7 @@ function gitMash() {
     if (observer) {
         observer.disconnect();
         observer = undefined;
-        console.log('GitMash not listening...')
+        console.log('GitMash not listening...');
     }
 
     if (window.location.href.match('https:\/\/github.com\/.*?\/pull\/.*') == null) {
@@ -65,7 +67,7 @@ function gitMash() {
                 console.log('GitMash not listening...')
             }
         });
-        console.log('GitMash listening...')
+        console.log('GitMash listening...');
         observer.observe(document.body, { childList: true, subtree: true });
     }
 }
