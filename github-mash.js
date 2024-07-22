@@ -75,4 +75,11 @@ function gitMash() {
 function selectGitMash(element) {
     element.click();
     console.log(element.textContent + ' selected!');
+    const mergeMessage = document.querySelector('.merge-message');
+    if (mergeMessage) {
+        const span = document.createElement('span');
+        span.innerText = '\u{1f954} Mashed! \u{1f954}';
+        span.style.float = 'right';
+        mergeMessage.prepend(span);
+    }
 }
