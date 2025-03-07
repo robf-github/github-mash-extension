@@ -15,23 +15,19 @@
 
     const selector = '[aria-label="Conflicts"] + div button';
 
-    const observer = new MutationObserver((mutationList, _observer) => {
-
-        for (const mutation of mutationList) {
-            if (mutation.type === "childList") {
-                // Check if the added nodes include the selector element
-                for (const node of mutation.addedNodes) {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        const element = node.querySelector(selector) || (node.matches && node.matches(selector) ? node : null);
-                        if (element) {
-                            console.log('GitMash checking...');
-                            gitMash(selector);
-                            return;
-                        }
-                    }
+    const observer = new MutationObserver((mutationList, observer) => {
+        mutationList.forEach(mutation => {
+            if (mutation.type === 'childList') {
+                const target = document.querySelector('[aria-label="Conflicts"] + div button');
+                if (target) {
+                    console.log('GitMash checking...');
+                    observer.disconnect()
+                    gitMash(selector);
+                    observer.observe(document.body, { childList: true, subtree: true });
+                    return;
                 }
             }
-        }
+        });
     });
 
     console.log('GitMash listening...');
@@ -89,6 +85,7 @@ function showGitMash(element, mergeMethod) {
     let message;
     if ((mergeMethod == 'squash' && currentMethod == 'squash and merge') ||
         (mergeMethod == 'merge' && currentMethod == 'merge pull request')) {
+        mashMessageElement.getAnimations().forEach(a => a.cancel());
         message = '\u{1f954} Mashed! \u{1f954}';
     } else {
         message = '\u{274C} Mismashed! \u{274C}';
