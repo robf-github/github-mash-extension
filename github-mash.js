@@ -20,7 +20,6 @@
             if (mutation.type === 'childList') {
                 const target = document.querySelector('[aria-label="Conflicts"] + div button');
                 if (target) {
-                    console.log('GitMash checking...');
                     observer.disconnect()
                     gitMash(selector);
                     observer.observe(document.body, { childList: true, subtree: true });
@@ -68,7 +67,6 @@ function gitMash(selector) {
 
 function showGitMash(element, mergeMethod) {
     const currentMethod = element.innerText.toLowerCase().trim();
-    console.log('Current method: ' + currentMethod);
 
     let mashMessageElement = document.querySelector('.mash-message');
     if (!mashMessageElement) {
