@@ -13,29 +13,39 @@
 
     console.log('GitMash loaded');
 
-    // Handle the SPA nature of github, listen for navigation changes and act on those.
-    window.navigation.addEventListener("navigate", (event) => {
-        if (event.navigationType === 'replace') {
-            gitMash();
+    const selector = '[aria-label="Conflicts"] + div button';
+
+    const observer = new MutationObserver((mutationList, _observer) => {
+
+        for (const mutation of mutationList) {
+            if (mutation.type === "childList") {
+                // Check if the added nodes include the selector element
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const element = node.querySelector(selector) || (node.matches && node.matches(selector) ? node : null);
+                        if (element) {
+                            console.log('GitMash checking...');
+                            gitMash(selector);
+                            return;
+                        }
+                    }
+                }
+            }
         }
     });
+
+    console.log('GitMash listening...');
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    gitMash(selector);
 })();
 
-let observer;
+function gitMash(selector) {
+    const isPullRequest = window.location.href.match('https:\/\/github.com\/.*?\/pull\/.*');
 
-function gitMash() {
-    if (observer) {
-        observer.disconnect();
-        observer = undefined;
-        console.log('GitMash not listening...');
-    }
-
-    if (window.location.href.match('https:\/\/github.com\/.*?\/pull\/.*') == null) {
+    if (!isPullRequest) {
         return;
     }
-
-    console.log(window.location.href);
-
     const developBranch = 'develop';
     const featureBranchPrefix = 'feature/';
 
@@ -53,25 +63,11 @@ function gitMash() {
         mergeMethod = 'merge';
     }
 
-    const selector = '[aria-label="Conflicts"] + div button';
-
     let element = document.querySelector(selector);
 
     if (element) {
         showGitMash(element, mergeMethod);
     }
-
-    observer = new MutationObserver(_ => {
-        let element = document.querySelector(selector);
-        if (element) {
-            observer.disconnect();
-            observer = undefined;
-            console.log('GitMash not listening...')
-            showGitMash(element, mergeMethod);
-        }
-    });
-    console.log('GitMash listening...');
-    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 function showGitMash(element, mergeMethod) {
