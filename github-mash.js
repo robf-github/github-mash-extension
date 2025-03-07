@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub Mash
-// @version      0.0.1
-// @description  Set your PR default GitHub Merge or Squash button based on where you are merging into
+// @version      0.0.2
+// @description  Warns if the default GitHub Merge or Squash button is "wrong" based on where you are merging into
 // @match https://github.com/*
 // @license MIT
 // @author robf-github
@@ -13,73 +13,93 @@
 
     console.log('GitMash loaded');
 
-    // Handle the SPA nature of github, listen for navigation changes and act on those.
-    window.navigation.addEventListener("navigate", (event) => {
-        if (event.navigationType === 'replace') {
-            gitMash();
-        }
+    const selector = '[aria-label="Conflicts"] + div button';
+
+    const observer = new MutationObserver((mutationList, observer) => {
+        mutationList.forEach(mutation => {
+            if (mutation.type === 'childList') {
+                const target = document.querySelector('[aria-label="Conflicts"] + div button');
+                if (target) {
+                    observer.disconnect()
+                    gitMash(selector);
+                    observer.observe(document.body, { childList: true, subtree: true });
+                    return;
+                }
+            }
+        });
     });
+
+    console.log('GitMash listening...');
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    gitMash(selector);
 })();
 
-let observer;
+function gitMash(selector) {
+    const isPullRequest = window.location.href.match('https:\/\/github.com\/.*?\/pull\/.*');
 
-function gitMash() {
-    if (observer) {
-        observer.disconnect();
-        observer = undefined;
-        console.log('GitMash not listening...');
-    }
-
-    if (window.location.href.match('https:\/\/github.com\/.*?\/pull\/.*') == null) {
+    if (!isPullRequest) {
         return;
     }
-
-    console.log(window.location.href);
-
     const developBranch = 'develop';
     const featureBranchPrefix = 'feature/';
 
-    const baseBranch = document.querySelector('.base-ref').textContent;
-    const headBranch = document.querySelector('.head-ref').textContent;
+    const baseBranch = document.querySelector('.base-ref')?.textContent;
+    const headBranch = document.querySelector('.head-ref')?.textContent;
 
     if (!baseBranch || !headBranch) {
         return;
     }
 
-    let selector;
+    let mergeMethod;
     if (baseBranch === developBranch && headBranch.startsWith(featureBranchPrefix)) {
-        selector = '.js-merge-box-button-squash';
+        mergeMethod = 'squash';
     } else {
-        selector = '.js-merge-box-button-merge';
+        mergeMethod = 'merge';
     }
 
     let element = document.querySelector(selector);
 
     if (element) {
-        selectGitMash(element);
-    } else {
-        observer = new MutationObserver(_ => {
-            let element = document.querySelector(selector);
-            if (element) {
-                observer.disconnect();
-                observer = undefined;
-                selectGitMash(element);
-                console.log('GitMash not listening...')
-            }
-        });
-        console.log('GitMash listening...');
-        observer.observe(document.body, { childList: true, subtree: true });
+        showGitMash(element, mergeMethod);
     }
 }
 
-function selectGitMash(element) {
-    element.click();
-    console.log(element.textContent + ' selected!');
-    const mergeMessage = document.querySelector('.merge-message');
-    if (mergeMessage) {
-        const span = document.createElement('span');
-        span.innerText = '\u{1f954} Mashed! \u{1f954}';
-        span.style.float = 'right';
-        mergeMessage.prepend(span);
+function showGitMash(element, mergeMethod) {
+    const currentMethod = element.innerText.toLowerCase().trim();
+
+    let mashMessageElement = document.querySelector('.mash-message');
+    if (!mashMessageElement) {
+        const mergeMessageElement = document.querySelector('[aria-label="Conflicts"]').nextSibling;
+        if (mergeMessageElement) {
+            span = document.createElement('span');
+            span.classList.add('mash-message');
+            span.style.float = 'right';
+            mergeMessageElement.prepend(span);
+            mashMessageElement = span;
+        }
     }
+
+    let message;
+    if ((mergeMethod == 'squash' && currentMethod == 'squash and merge') ||
+        (mergeMethod == 'merge' && currentMethod == 'merge pull request')) {
+        mashMessageElement.getAnimations().forEach(a => a.cancel());
+        message = '\u{1f954} Mashed! \u{1f954}';
+    } else {
+        message = '\u{274C} Mismashed! \u{274C}';
+
+        mashMessageElement.animate(
+            [
+                { opacity: 0 },
+                { opacity: 1 },
+                { opacity: 0 },
+            ],
+            {
+                duration: 1000,
+                iterations: Infinity
+            }
+        );
+    }
+
+    mashMessageElement.innerText = message;
 }
