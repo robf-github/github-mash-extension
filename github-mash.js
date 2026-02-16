@@ -13,12 +13,12 @@
 
     console.log('GitMash loaded');
 
-    const selector = '[aria-label="Conflicts"] + div button';
+    const selector = '[data-testid="mergebox-partial"] [class*="prc-ButtonGroup-"] button';
 
     const observer = new MutationObserver((mutationList, observer) => {
         mutationList.forEach(mutation => {
             if (mutation.type === 'childList') {
-                const target = document.querySelector('[aria-label="Conflicts"] + div button');
+                const target = document.querySelector(selector);
                 if (target) {
                     observer.disconnect()
                     gitMash(selector);
@@ -44,8 +44,9 @@ function gitMash(selector) {
     const developBranch = 'develop';
     const featureBranchPrefix = 'feature/';
 
-    const baseBranch = document.querySelector('.base-ref')?.textContent;
-    const headBranch = document.querySelector('.head-ref')?.textContent;
+    const branchElements = document.querySelectorAll('[class*="prc-BranchName-"]');
+    const baseBranch = branchElements[0]?.textContent;
+    const headBranch = branchElements[1]?.textContent;
 
     if (!baseBranch || !headBranch) {
         return;
@@ -70,7 +71,8 @@ function showGitMash(element, mergeMethod) {
 
     let mashMessageElement = document.querySelector('.mash-message');
     if (!mashMessageElement) {
-        const mergeMessageElement = document.querySelector('[aria-label="Conflicts"]').nextSibling;
+        const mergeMessageElement = document.querySelector('[data-testid="mergebox-partial"] [class*="prc-ButtonGroup-"]')
+            ?.parentElement?.parentElement;
         if (mergeMessageElement) {
             span = document.createElement('span');
             span.classList.add('mash-message');
